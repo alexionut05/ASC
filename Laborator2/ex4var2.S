@@ -1,6 +1,6 @@
 .data
 	x:	.long 2147483647
-        textP: 	.asciz "PRIM\n"
+	textP:	.asciz "PRIM\n"
 	textF:	.asciz "NON-PRIM\n"
 
 .text
@@ -16,26 +16,28 @@ main:
 	mov	$0, %edx
 	idivl	%ebx
 	mov	$0, %eax
-	cmp	%eax, %edx
+	cmp	%edx, %eax
 	je	fail
 
+	mov	x, %ecx
 	mov	$3, %ebx
 	jmp	check
 
 
 check:
-	mov	$0, %edx
 	movl	x, %eax
+	mov	$0, %edx
 	idivl	%ebx
+	cmp	%ecx, %ebx
+	jg	pass
+
 	mov	$0, %eax
-	cmp	%eax, %edx
+	cmp	%edx, %eax
 	je	fail
 
-	cmp	%ebx, %ecx
-	jl	pass
-
 	addl	$2, %ebx
-	jmp	check
+	movl	x, %ecx
+	loop	check
 
 
 pass:
