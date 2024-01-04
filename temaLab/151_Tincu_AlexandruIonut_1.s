@@ -19,17 +19,14 @@
 main:			pushl	$Lines
 			pushl	$FormatScanf
 			call	scanf
-			addl	$8, %esp
 
 			pushl	$Columns
 			pushl	$FormatScanf
 			call	scanf
-			addl	$8, %esp
 
 			pushl	$Temp
 			pushl	$FormatScanf
 			call	scanf
-			addl	$8, %esp
 
 			movl	Temp, %ebx
 
@@ -40,12 +37,10 @@ read_cells.loop:	testl	%ebx, %ebx		# check exit condition
 			pushl	$Idx01
 			pushl	$FormatScanf
 			call	scanf
-			addl	$8, %esp
 
 			pushl	$Idx02
 			pushl	$FormatScanf
 			call	scanf
-			addl	$8, %esp
 
 			movl	Columns, %eax		# (n+2)*(i+1)+j+1
 			addl	$2, %eax		#
@@ -63,7 +58,6 @@ read_cells.loop:	testl	%ebx, %ebx		# check exit condition
 read_cells.exit:	pushl	$Temp
 			pushl	$FormatScanf
 			call	scanf
-			addl	$8, %esp
 
 			movl	Temp, %esi
 
@@ -180,12 +174,10 @@ simulate_gens.exit:
 			pushl	$Temp
 			pushl	$FormatScanf
 			call	scanf
-			addl	$8, %esp
 
 			pushl	$Text
 			pushl	$FormatScanfStr
 			call	scanf
-			addl	$8, %esp
 
 			movl	Temp, %eax
 			testl	%eax, %eax
@@ -286,17 +278,14 @@ encrypt:		leal	Text, %edi
 			pushl	%eax
 			pushl	$FormatPrintfCh
 			call	printf
-			addl	$8, %esp
 
 			movb	%bl, %al
 			pushl	%eax
 			pushl	$FormatPrintfCh
 			call	printf
-			addl	$8, %esp
 
 			pushl	$0
 			call	fflush
-			addl	$4, %esp
 			incl	%esi
 			jmp	print00.loop
 	print00.exit:
@@ -393,12 +382,9 @@ decrypt:		leal	Text, %edi
 			pushl	%ebx
 			pushl	$FormatPrintfCh
 			call	printf
-			addl	$8, %esp
 
 			pushl	$0
 			call	fflush
-			addl	$4, %esp
-
 			addl	$2, %esi
 			jmp	print01.loop
 	print01.exit:

@@ -16,17 +16,14 @@
 main:			pushl	$Lines
 			pushl	$FormatScanf
 			call	scanf
-			addl	$8, %esp
 
 			pushl	$Columns
 			pushl	$FormatScanf
 			call	scanf
-			addl	$8, %esp
 
 			pushl	$Temp
 			pushl	$FormatScanf
 			call	scanf
-			addl	$8, %esp
 
 			movl	Temp, %ebx
 
@@ -37,12 +34,10 @@ read_cells.loop:	testl	%ebx, %ebx		# check exit condition
 			pushl	$Idx01
 			pushl	$FormatScanf
 			call	scanf
-			addl	$8, %esp
 
 			pushl	$Idx02
 			pushl	$FormatScanf
 			call	scanf
-			addl	$8, %esp
 
 			movl	Columns, %eax		# (n+2)*(i+1)+j+1
 			addl	$2, %eax		#
@@ -60,7 +55,6 @@ read_cells.loop:	testl	%ebx, %ebx		# check exit condition
 read_cells.exit:	pushl	$Temp
 			pushl	$FormatScanf
 			call	scanf
-			addl	$8, %esp
 
 			movl	Temp, %esi
 
@@ -197,11 +191,9 @@ print_array:		movb	Lines, %bl
 			pushl	%ecx
 			pushl	$FormatPrintf
 			call	printf
-			addl	$8, %esp
 
 			pushl	$0
 			call	fflush
-			addl	$4, %esp
 
 			decb	%bh
 			jmp	for_col02.loop

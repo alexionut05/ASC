@@ -38,7 +38,6 @@ main:			pushl	$.LC0
 			pushl	fp
 			call	fscanf
 
-			addl	$44, %esp
 			movl	Temp, %ebx
 
 read_cells.loop:	testl	%ebx, %ebx		# check exit condition
@@ -54,7 +53,6 @@ read_cells.loop:	testl	%ebx, %ebx		# check exit condition
 			pushl	$FormatScanf
 			pushl	fp
 			call	fscanf
-			addl	$16, %esp
 
 			movl	Columns, %eax		# (n+2)*(i+1)+j+1
 			addl	$2, %eax		#
@@ -73,13 +71,6 @@ read_cells.exit:	pushl	$Temp
 			pushl	$FormatScanf
 			pushl	fp
 			call	fscanf
-			addl	$8, %esp
-
-			movl	Temp, %esi
-
-simulate_gens.loop:	testl	%esi, %esi		# check exit condition
-			jz	simulate_gens.exit	#
-			decl	%esi			#
 
 			pushl	fp
 			call	fclose
@@ -88,7 +79,12 @@ simulate_gens.loop:	testl	%esi, %esi		# check exit condition
 			pushl	$.LC3
 			call	fopen
 			movl	%eax, fp
-			addl	$12, %esp
+
+			movl	Temp, %esi
+
+simulate_gens.loop:	testl	%esi, %esi		# check exit condition
+			jz	simulate_gens.exit	#
+			decl	%esi			#
 
 neighbr_cnt:		movb	Lines, %bl
 
@@ -140,7 +136,6 @@ calculate_cells:	movb	Lines, %bl
 
 	for_lin01.loop:	testb	%bl, %bl		# check exit condition
 			jz	for_lin01.exit		#
-
 			movb	Columns, %bh
 
 	for_col01.loop:	testb	%bh, %bh		# check exit condition
@@ -220,19 +215,20 @@ print_array:		movb	Lines, %bl
 			pushl	$FormatPrintf
 			pushl	fp
 			call	fprintf
-			addl	$12, %esp
 
 			decb	%bh
 			jmp	for_col02.loop
 	for_col02.exit:
-			movl	%ebp, %ebx
+			pushl	$NewLine
+			pushl	fp
+			call	fprintf
+
 			decb	%bl
 			jmp	for_lin02.loop
 	for_lin02.exit:
 
 			pushl	fp
 			call	fclose
-			addl	$4, %esp
 exit:			movl	$1, %eax
 			xorl	%ebx, %ebx
 			int	$0x80
