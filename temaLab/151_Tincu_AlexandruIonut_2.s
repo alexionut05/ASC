@@ -12,8 +12,8 @@
 	fp:		.space 4
 	.LC0:		.asciz "r"
 	.LC1:		.asciz "w"
-	.LC2:		.asciz "input.txt"
-	.LC3:		.asciz "output.txt"
+	.LC2:		.asciz "in.txt"
+	.LC3:		.asciz "out.txt"
 
 .text
 
