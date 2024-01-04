@@ -1,260 +1,222 @@
 .data
-	i:		.space 4
-	j:		.space 4
-	m:		.space 4	# lines
-	n:		.space 4	# columns
-	p:		.space 4	# alive cells
-	k:		.space 4	# generations
-	array:		.zero 6400
-	newArray:	.zero 6400
-	formatScanf:	.asciz "%ld"
-	formatPrintf:	.asciz "%ld "
-	newLine:	.asciz "\n"
+	Idx01:		.space 4
+	Idx02:		.space 4
+	Lines:		.space 4
+	Columns:	.space 4
+	Temp:		.space 4
+	FormatScanf:	.asciz "%ld"
+	FormatPrintf:	.asciz "%ld "
+	ArrCells:	.zero 400
+	ArrNeighbrCnt:	.zero 400
+	NewLine:	.asciz "\n"
 
 .text
-.global main
-main:
-	pushl	$m
-	pushl	$formatScanf
-	call	scanf
-	popl	%eax
-	popl	%eax
 
-	pushl	$n
-	pushl	$formatScanf
-	call	scanf
-	popl	%eax
-	popl	%eax
+.globl main
+main:			pushl	$Lines
+			pushl	$FormatScanf
+			call	scanf
+			addl	$8, %esp
 
-	pushl	$p
-	pushl	$formatScanf
-	call	scanf
-	popl	%eax
-	popl	%eax
+			pushl	$Columns
+			pushl	$FormatScanf
+			call	scanf
+			addl	$8, %esp
 
-_read_cells:
-	xorl	%eax, %eax
-	cmp	%eax, p
-	je	_exit_read_cells
-	decl	p
+			pushl	$Temp
+			pushl	$FormatScanf
+			call	scanf
+			addl	$8, %esp
 
-	pushl	$i
-	pushl	$formatScanf
-	call	scanf
-	popl	%eax
-	popl	%eax
+			movl	Temp, %ebx
 
-	pushl	$j
-	pushl	$formatScanf
-	call	scanf
-	popl	%eax
-	popl	%eax
+read_cells.loop:	testl	%ebx, %ebx		# check exit condition
+			jz	read_cells.exit		#
+			decl	%ebx			#
 
-	# to refer to the point (i, j) in the ext. arr:
-	# (n + 2) * (i + 1) + j + 1
+			pushl	$Idx01
+			pushl	$FormatScanf
+			call	scanf
+			addl	$8, %esp
 
-	xorl	%edx, %edx
-	movl	n, %eax		# n
-	addl	$2, %eax	# (n+2)
-	movl	i, %ebx		# (n+2), i
-	incl	%ebx		# (n+2), (i+1)
-	mull	%ebx		# (n+2) * (i+1)
-	addl	j, %eax		# (n+2) * (i+1) + j
+			pushl	$Idx02
+			pushl	$FormatScanf
+			call	scanf
+			addl	$8, %esp
 
-	lea	array, %edi
-	movl	$1, 4(%edi, %eax, 4)
+			movl	Columns, %eax		# (n+2)*(i+1)+j+1
+			addl	$2, %eax		#
+			movl	Idx01, %ecx		#
+			incl	%ecx			#
+			mull	%ecx			#
+			movl	Idx02, %ecx		#
+			addl	%ecx, %eax		#
 
-	jmp	_read_cells
+			leal	ArrCells, %edi
+			movb	$1, 1(%edi, %eax, 1)
 
-_exit_read_cells:
-	pushl	$k
-	pushl	$formatScanf
-	call	scanf
-	popl	%eax
-	popl	%eax
+			jmp	read_cells.loop
 
-_run_simulation:
-	xorl	%eax, %eax
-	cmp	%eax, k
-	je	_exit_run_simulation
-	decl	k
+read_cells.exit:	pushl	$Temp
+			pushl	$FormatScanf
+			call	scanf
+			addl	$8, %esp
 
-	movl	$0, i
+			movl	Temp, %esi
 
-	_simulate_col:
-		movl	i, %eax
-		cmp	%eax, m
-		je	_exit_simulate_col
+simulate_gens.loop:	testl	%esi, %esi		# check exit condition
+			jz	simulate_gens.exit	#
+			decl	%esi			#
 
-		movl	$0, j
+neighbr_cnt:		movb	Lines, %bl
 
-		_simulate_line:
-			movl	j, %eax
-			cmp	%eax, n
-			je	_exit_simulate_line
-			xorl	%ecx, %ecx	# sum
+	for_lin00.loop:	testb	%bl, %bl		# check exit condition
+			jz	for_lin00.exit		#
 
-			xorl	%edx, %edx
-			movl	n, %eax		# n
-			addl	$2, %eax	# (n+2)
-			movl	i, %ebx		# (n+2), i
-			mull	%ebx		# (n+2)*i
-			addl	j, %eax		# (n+2)*i+j
+			movb	Columns, %bh
 
-			lea	array, %edi
-			addl	(%edi, %eax, 4), %ecx
-			addl	4(%edi, %eax, 4), %ecx
-			addl	8(%edi, %eax, 4), %ecx
+	for_col00.loop:	testb	%bh, %bh		# check exit condition
+			jz	for_col00.exit		#
 
-			addl	n, %eax
+			xorb	%dl, %dl		# in %dl we save the neighbours count
+
+			movl	Columns, %eax
 			addl	$2, %eax
+			movl	%eax, %ebp		# in %ebp we save (n+2) for easier future access
+			movl	Lines, %ecx
+			subb	%bl, %cl
+			mull	%ecx
+			movl	Columns, %ecx
+			subb	%bh, %cl
+			addw	%cx, %ax
+			leal	ArrCells, %edi
 
-			addl	(%edi, %eax, 4), %ecx
-			movl	4(%edi, %eax, 4), %edx
-			addl	8(%edi, %eax, 4), %ecx
+			addb	0(%edi, %eax, 1), %dl
+			addb	1(%edi, %eax, 1), %dl
+			addb	2(%edi, %eax, 1), %dl
+			addl	%ebp, %eax
+			addb	0(%edi, %eax, 1), %dl
+			addb	2(%edi, %eax, 1), %dl
+			addl	%ebp, %eax
+			addb	0(%edi, %eax, 1), %dl
+			addb	1(%edi, %eax, 1), %dl
+			addb	2(%edi, %eax, 1), %dl
 
-			addl	n, %eax
+			subl	%ebp, %eax
+			leal	ArrNeighbrCnt, %edi
+			movb	%dl, 1(%edi, %eax, 1)
+
+			decb	%bh
+			jmp	for_col00.loop
+	for_col00.exit:
+
+			decb	%bl
+			jmp	for_lin00.loop
+	for_lin00.exit:
+
+calculate_cells:	movb	Lines, %bl
+
+	for_lin01.loop:	testb	%bl, %bl		# check exit condition
+			jz	for_lin01.exit		#
+
+			movb	Columns, %bh
+
+	for_col01.loop:	testb	%bh, %bh		# check exit condition
+			jz	for_col01.exit		#
+
+			movl	Columns, %eax
 			addl	$2, %eax
+			movl	Lines, %ecx
+			subb	%bl, %cl
+			incb	%cl
+			mull	%ecx
+			movl	Columns, %ecx
+			subb	%bh, %cl
+			addl	%ecx, %eax
+			movl	%eax, %ebp
 
-			addl	(%edi, %eax, 4), %ecx
-			addl	4(%edi, %eax, 4), %ecx
-			addl	8(%edi, %eax, 4), %ecx
+			leal	ArrCells, %edi
 
-			# now we reset the original (i, j)
+			xorl	%ecx, %ecx
+			movb	1(%edi, %ebp, 1), %ah
+			testb	%ah, %ah
+			setnz	%ah				# if (cell_is_alive) %ah = 1
+			setz	%al				# else               %al = 1
 
-			xorl    %edx, %edx
-                        movl    n, %eax
-                        addl    $2, %eax
-                        movl    i, %ebx
-                        incl    %ebx
-                        mull    %ebx
-                        addl    j, %eax
-                        movl    %eax, %ebx
+			leal	ArrNeighbrCnt, %edi
 
-			_check_cell_status:
-			xorl	%eax, %eax
-			cmp	%eax, 4(%edi, %ebx, 4)
-			jne	_cell_is_alive
+			movb	$3, %dl
+			movb	1(%edi, %ebp, 1), %dh
+			cmpb	%dl, %dh			# if (neighbours == 3) %cl = 1
+			sete	%cl
 
-			_cell_is_dead:
-			movl	$3, %eax
-			cmp	%eax, %ecx
-			jne	_exit_check_cell_status
+			movb	$2, %dl
+			movb	1(%edi, %ebp, 1), %dh
+			cmpb	%dl, %dh			# if (neighbours == 2) %ch = 1
+			sete	%ch
 
-			jmp	_cell_lives
+			andb	%cl, %al			# %al = (cell_is_dead && neighbours == 3)
+			orb	%ch, %cl			# %cl = (neigbhours == 3 || neigbhours == 2)
+			andb	%cl, %ah			# %ah = (cell_is alive && (neighbours == 3 || neighbours == 2))
+			orb	%ah, %al			# %al = %al || %ah
 
-			_cell_is_alive:
-			movl	$2, %eax
-			cmp	%eax, %ecx
-			jl	_cell_dies
+			leal	ArrCells, %edi
+			movb	%al, 1(%edi, %ebp, 1)
 
-			incl	%eax
-			cmp	%eax, %ecx
-			jg	_cell_dies
+			decb	%bh
+			jmp	for_col01.loop
+	for_col01.exit:
 
-			jmp	_cell_lives
+			decb	%bl
+			jmp	for_lin01.loop
+	for_lin01.exit:
 
-			_cell_lives:
-			lea	newArray, %edi
-			movl	$1, 4(%edi, %ebx, 4)
-			jmp	_exit_check_cell_status
+			jmp	simulate_gens.loop
+simulate_gens.exit:
 
-			_cell_dies:
-			lea	newArray,%edi
-			movl	$0, 4(%edi, %ebx, 4)
-			jmp	_exit_check_cell_status
+print_array:		movb	Lines, %bl
 
-			_exit_check_cell_status:
-			incl	j
-			jmp	_simulate_line
-		_exit_simulate_line:
-		incl	i
-		jmp	_simulate_col
-	_exit_simulate_col:
-	movl	$0, i
+	for_lin02.loop:	testb	%bl, %bl
+			jz	for_lin02.exit
+			movb	Columns, %bh
 
-	_copy_array:
-		movl	i, %eax
-		cmp	%eax, m
-		je	_exit_copy_array
+	for_col02.loop:	testb	%bh, %bh
+			jz	for_col02.exit
 
-		movl	$0, j
+			movl	Columns, %eax
+			movl	Lines, %ecx
+			addl	$2, %eax
+			subb	%bl, %cl
+			incl	%ecx
+			mull	%ecx
+			addl	Columns, %eax
+			subb	%bh, %al
+			leal	ArrCells, %edi
 
-		_copy_line:
-			movl	j, %eax
-			cmp	%eax, n
-			je	_exit_copy_line
+			movb	1(%edi, %eax, 1), %cl
+			pushl	%ecx
+			pushl	$FormatPrintf
+			call	printf
+			addl	$8, %esp
 
-			xorl	%edx, %edx
-			movl	n, %eax		# n
-			addl	$2, %eax	# (n+2)
-			movl	i, %ebx		# (n+2), i
-			incl	%ebx		# (n+2), (i+1)
-			mull	%ebx		# (n+2)*(i+1)
-			incl	j
-			addl	j, %eax		# (n+2)*(i+1)+j+1
+			pushl	$0
+			call	fflush
+			addl	$4, %esp
 
-			lea	array, %edi
-			lea	newArray, %esi
-			movl	(%esi, %eax, 4), %ebx
-			movl	%ebx, (%edi, %eax, 4)
+			decb	%bh
+			jmp	for_col02.loop
+	for_col02.exit:
+			movl	%ebx, %ebp
+			movl	$4, %eax
+			movl	$1, %ebx
+			movl	$NewLine, %ecx
+			movl	$2, %edx
+			int	$0x80
+			movl	%ebp, %ebx
+			decb	%bl
+			jmp	for_lin02.loop
+	for_lin02.exit:
 
-			jmp	_copy_line
-		_exit_copy_line:
-		incl	i
-		jmp	_copy_array
-	_exit_copy_array:
-	jmp	_run_simulation
-
-_exit_run_simulation:
-	movl	$0, i
-
-_print_array:
-	movl	i, %eax
-	cmp	%eax, m
-	je	_exit_print_array
-
-	movl	$0, j
-
-	_print_line:
-		movl	j, %eax
-		cmp	%eax, n
-		je	_exit_print_line
-
-		xorl	%edx, %edx
-		movl	n, %eax		# n
-		addl	$2, %eax	# (n+2)
-		movl	i, %ebx		# (n+2), i
-		incl	%ebx		# (n+2), (i+1)
-		mull	%ebx		# (n+2)*(i+1)
-		incl	j
-		addl	j, %eax		# (n+2)*(i+1)+j+1
-
-		lea	newArray, %edi
-		pushl	(%edi, %eax, 4)
-		pushl	$formatPrintf
-		call	printf
-		popl	%eax
-		popl	%eax
-
-		pushl	$0
-		call	fflush
-		popl	%ebx
-
-		jmp	_print_line
-	_exit_print_line:
-	movl	$4, %eax
-	movl	$1, %ebx
-	movl	$newLine, %ecx
-	movl	$2, %edx
-	int	$0x80
-
-	incl	i
-	jmp	_print_array
-_exit_print_array:
-	jmp	exit
-
-exit:
-	movl	$1, %eax
-	xorl	%ebx, %ebx
-	int	$0x80
+exit:			movl	$1, %eax
+			xorl	%ebx, %ebx
+			int	$0x80

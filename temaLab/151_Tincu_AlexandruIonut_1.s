@@ -1,411 +1,414 @@
 .data
-	i:		.space 4
-	j:		.space 4
-	m:		.space 4	# lines
-	n:		.space 4	# columns
-	p:		.space 4	# alive cells
-	k:		.space 4	# generations
-	array:		.zero 6400
-	newArray:	.zero 6400
-	formatScanf:	.asciz "%ld"
-	formatPrintf:	.asciz "%ld "
-	newLine:	.asciz "\n"
-	buffer:		.zero 4
-	message:	.space 13
-	len:		.space 4
-	charA:		.asciz "A"
-	charB:		.asciz "B"
-	charC:		.asciz "C"
-	charD:		.asciz "D"
-	charE:		.asciz "E"
-	charF:		.asciz "F"
-	char0x:		.asciz "0x"
+	Idx01:		.space 4
+	Idx02:		.space 4
+	Lines:		.space 4
+	Columns:	.space 4
+	Temp:		.space 4
+	ArrCells:	.zero 400
+	ArrNeighbrCnt:	.zero 400
+	HexPref:	.asciz "0x"
+	NewLine:	.asciz "\n"
+	FormatScanf:	.asciz "%ld"
+	FormatPrintf:	.asciz "%ld "
+	FormatScanfStr:	.asciz "%s"
+	FormatPrintfCh:	.asciz "%c"
+	Text:		.space 23
 
 .text
-_strlen:
-	lea	message, %edi
-	movl	(%edi, %ebp, 1), %ebx
-	xorl	%eax, %eax
-	incl	%ebp
+.globl main
+main:			pushl	$Lines
+			pushl	$FormatScanf
+			call	scanf
+			addl	$8, %esp
 
-	cmp	%eax, %ebx
-	jne	_strlen
+			pushl	$Columns
+			pushl	$FormatScanf
+			call	scanf
+			addl	$8, %esp
 
-	subl	$2, %ebp
-	movl	%ebp, len
-	ret
+			pushl	$Temp
+			pushl	$FormatScanf
+			call	scanf
+			addl	$8, %esp
 
-.global main
-main:
-	pushl	$m
-	pushl	$formatScanf
-	call	scanf
-	popl	%eax
-	popl	%eax
+			movl	Temp, %ebx
 
-	pushl	$n
-	pushl	$formatScanf
-	call	scanf
-	popl	%eax
-	popl	%eax
+read_cells.loop:	testl	%ebx, %ebx		# check exit condition
+			jz	read_cells.exit		#
+			decl	%ebx			#
 
-	pushl	$p
-	pushl	$formatScanf
-	call	scanf
-	popl	%eax
-	popl	%eax
+			pushl	$Idx01
+			pushl	$FormatScanf
+			call	scanf
+			addl	$8, %esp
 
-_read_cells:
-	xorl	%eax, %eax
-	cmp	%eax, p
-	je	_exit_read_cells
-	decl	p
+			pushl	$Idx02
+			pushl	$FormatScanf
+			call	scanf
+			addl	$8, %esp
 
-	pushl	$i
-	pushl	$formatScanf
-	call	scanf
-	popl	%eax
-	popl	%eax
+			movl	Columns, %eax		# (n+2)*(i+1)+j+1
+			addl	$2, %eax		#
+			movl	Idx01, %ecx		#
+			incl	%ecx			#
+			mull	%ecx			#
+			movl	Idx02, %ecx		#
+			addl	%ecx, %eax		#
 
-	pushl	$j
-	pushl	$formatScanf
-	call	scanf
-	popl	%eax
-	popl	%eax
+			leal	ArrCells, %edi
+			movb	$1, 1(%edi, %eax, 1)
 
-	# to refer to the point (i, j) in the ext. arr:
-	# (n + 2) * (i + 1) + j + 1
+			jmp	read_cells.loop
 
-	xorl	%edx, %edx
-	movl	n, %eax		# n
-	addl	$2, %eax	# (n+2)
-	movl	i, %ebx		# (n+2), i
-	incl	%ebx		# (n+2), (i+1)
-	mull	%ebx		# (n+2) * (i+1)
-	addl	j, %eax		# (n+2) * (i+1) + j
+read_cells.exit:	pushl	$Temp
+			pushl	$FormatScanf
+			call	scanf
+			addl	$8, %esp
 
-	lea	array, %edi
-	movl	$1, 4(%edi, %eax, 4)
+			movl	Temp, %esi
 
-	jmp	_read_cells
+simulate_gens.loop:	testl	%esi, %esi		# check exit condition
+			jz	simulate_gens.exit	#
+			decl	%esi			#
 
-_exit_read_cells:
-	pushl	$k
-	pushl	$formatScanf
-	call	scanf
-	popl	%eax
-	popl	%eax
+neighbr_cnt:		movb	Lines, %bl
 
-_run_simulation:
-	xorl	%eax, %eax
-	cmp	%eax, k
-	je	_exit_run_simulation
-	decl	k
+	for_lin00.loop:	testb	%bl, %bl		# check exit condition
+			jz	for_lin00.exit		#
 
-	movl	$0, i
+			movb	Columns, %bh
 
-	_simulate_col:
-		movl	i, %eax
-		cmp	%eax, m
-		je	_exit_simulate_col
+	for_col00.loop:	testb	%bh, %bh		# check exit condition
+			jz	for_col00.exit		#
 
-		movl	$0, j
+			xorb	%dl, %dl		# in %dl we save the neighbours count
 
-		_simulate_line:
-			movl	j, %eax
-			cmp	%eax, n
-			je	_exit_simulate_line
-			xorl	%ecx, %ecx	# sum
-
-			xorl	%edx, %edx
-			movl	n, %eax		# n
-			addl	$2, %eax	# (n+2)
-			movl	i, %ebx		# (n+2), i
-			mull	%ebx		# (n+2)*i
-			addl	j, %eax		# (n+2)*i+j
-
-			lea	array, %edi
-			addl	(%edi, %eax, 4), %ecx
-			addl	4(%edi, %eax, 4), %ecx
-			addl	8(%edi, %eax, 4), %ecx
-
-			addl	n, %eax
+			movl	Columns, %eax
 			addl	$2, %eax
+			movl	%eax, %ebp		# in %ebp we save (n+2) for easier future access
+			movl	Lines, %ecx
+			subb	%bl, %cl
+			mull	%ecx
+			movl	Columns, %ecx
+			subb	%bh, %cl
+			addw	%cx, %ax
+			leal	ArrCells, %edi
 
-			addl	(%edi, %eax, 4), %ecx
-			movl	4(%edi, %eax, 4), %edx
-			addl	8(%edi, %eax, 4), %ecx
+			addb	0(%edi, %eax, 1), %dl
+			addb	1(%edi, %eax, 1), %dl
+			addb	2(%edi, %eax, 1), %dl
+			addl	%ebp, %eax
+			addb	0(%edi, %eax, 1), %dl
+			addb	2(%edi, %eax, 1), %dl
+			addl	%ebp, %eax
+			addb	0(%edi, %eax, 1), %dl
+			addb	1(%edi, %eax, 1), %dl
+			addb	2(%edi, %eax, 1), %dl
 
-			addl	n, %eax
+			subl	%ebp, %eax
+			leal	ArrNeighbrCnt, %edi
+			movb	%dl, 1(%edi, %eax, 1)
+
+			decb	%bh
+			jmp	for_col00.loop
+	for_col00.exit:
+
+			decb	%bl
+			jmp	for_lin00.loop
+	for_lin00.exit:
+
+calculate_cells:	movb	Lines, %bl
+
+	for_lin01.loop:	testb	%bl, %bl		# check exit condition
+			jz	for_lin01.exit		#
+
+			movb	Columns, %bh
+
+	for_col01.loop:	testb	%bh, %bh		# check exit condition
+			jz	for_col01.exit		#
+
+			movl	Columns, %eax
 			addl	$2, %eax
+			movl	Lines, %ecx
+			subb	%bl, %cl
+			incb	%cl
+			mull	%ecx
+			movl	Columns, %ecx
+			subb	%bh, %cl
+			addl	%ecx, %eax
+			movl	%eax, %ebp
 
-			addl	(%edi, %eax, 4), %ecx
-			addl	4(%edi, %eax, 4), %ecx
-			addl	8(%edi, %eax, 4), %ecx
+			leal	ArrCells, %edi
 
-			# now we reset the original (i, j)
+			xorl	%ecx, %ecx
+			movb	1(%edi, %ebp, 1), %ah
+			testb	%ah, %ah
+			setnz	%ah				# if (cell_is_alive) %ah = 1
+			setz	%al				# else               %al = 1
 
-			xorl    %edx, %edx
-                        movl    n, %eax
-                        addl    $2, %eax
-                        movl    i, %ebx
-                        incl    %ebx
-                        mull    %ebx
-                        addl    j, %eax
-                        movl    %eax, %ebx
+			leal	ArrNeighbrCnt, %edi
 
-			_check_cell_status:
-			xorl	%eax, %eax
-			cmp	%eax, 4(%edi, %ebx, 4)
-			jne	_cell_is_alive
+			movb	$3, %dl
+			movb	1(%edi, %ebp, 1), %dh
+			cmpb	%dl, %dh			# if (neighbours == 3) %cl = 1
+			sete	%cl
 
-			_cell_is_dead:
-			movl	$3, %eax
-			cmp	%eax, %ecx
-			jne	_exit_check_cell_status
+			movb	$2, %dl
+			movb	1(%edi, %ebp, 1), %dh
+			cmpb	%dl, %dh			# if (neighbours == 2) %ch = 1
+			sete	%ch
 
-			jmp	_cell_lives
+			andb	%cl, %al			# %al = (cell_is_dead && neighbours == 3)
+			orb	%ch, %cl			# %cl = (neigbhours == 3 || neigbhours == 2)
+			andb	%cl, %ah			# %ah = (cell_is alive && (neighbours == 3 || neighbours == 2))
+			orb	%ah, %al			# %al = %al || %ah
 
-			_cell_is_alive:
-			movl	$2, %eax
-			cmp	%eax, %ecx
-			jl	_cell_dies
+			leal	ArrCells, %edi
+			movb	%al, 1(%edi, %ebp, 1)
 
-			incl	%eax
-			cmp	%eax, %ecx
-			jg	_cell_dies
+			decb	%bh
+			jmp	for_col01.loop
+	for_col01.exit:
 
-			jmp	_cell_lives
+			decb	%bl
+			jmp	for_lin01.loop
+	for_lin01.exit:
 
-			_cell_lives:
-			lea	newArray, %edi
-			movl	$1, 4(%edi, %ebx, 4)
-			jmp	_exit_check_cell_status
+			jmp	simulate_gens.loop
+simulate_gens.exit:
 
-			_cell_dies:
-			lea	newArray,%edi
-			movl	$0, 4(%edi, %ebx, 4)
-			jmp	_exit_check_cell_status
+			pushl	$Temp
+			pushl	$FormatScanf
+			call	scanf
+			addl	$8, %esp
 
-			_exit_check_cell_status:
-			incl	j
-			jmp	_simulate_line
-		_exit_simulate_line:
-		incl	i
-		jmp	_simulate_col
-	_exit_simulate_col:
-	movl	$0, i
+			pushl	$Text
+			pushl	$FormatScanfStr
+			call	scanf
+			addl	$8, %esp
 
-	_copy_array:
-		movl	i, %eax
-		cmp	%eax, m
-		je	_exit_copy_array
+			movl	Temp, %eax
+			testl	%eax, %eax
+			jnz	decrypt
 
-		movl	$0, j
+encrypt:		leal	Text, %edi
+			xorl	%ebx, %ebx
+	strlen00.loop:	movb	(%edi, %ebx, 1), %al
+			testb	%al, %al
+			jz	strlen00.exit
+			incb	%bl
+			jmp	strlen00.loop
+	strlen00.exit:	movl	%ebx, Temp
+			shlb	$3, %bl
+			movl	Lines, %eax
+			addl	$2, %eax
+			movl	Columns, %esi
+			addl	$2, %esi
+			mull	%esi
+			movl	%eax, %esi
+			movl	%eax, %ebp
 
-		_copy_line:
-			movl	j, %eax
-			cmp	%eax, n
-			je	_exit_copy_line
+			leal	ArrCells, %edi
+	extend00.loop:	cmp	%ebx, %ebp
+			jg	extend00.exit
+			xorl	%ecx, %ecx
+			movl	%ebp, %edx
+	cpy00.loop:	cmp	%ecx, %esi
+			je	cpy00.exit
+			movb	(%edi, %ecx, 1), %al
+			movb	%al, (%edi, %edx, 1)
+			incl	%ecx
+			incl	%edx
+			jmp	cpy00.loop
+	cpy00.exit:
+			addl	%esi, %ebp
+			jmp	extend00.loop
+	extend00.exit:
+			movl	$4, %eax
+			movl	$1, %ebx
+			movl	$HexPref, %ecx
+			movl	$3, %edx
+			int	$0x80
 
-			xorl	%edx, %edx
-			movl	n, %eax		# n
-			addl	$2, %eax	# (n+2)
-			movl	i, %ebx		# (n+2), i
-			incl	%ebx		# (n+2), (i+1)
-			mull	%ebx		# (n+2)*(i+1)
-			incl	j
-			addl	j, %eax		# (n+2)*(i+1)+j+1
+			xorl	%esi, %esi
+	print00.loop:	movl	Temp, %eax
+			cmpl	%esi, %eax
+			je	print00.exit
 
-			lea	array, %edi
-			lea	newArray, %esi
-			movl	(%esi, %eax, 4), %ebx
-			movl	%ebx, (%edi, %eax, 4)
+			xorb	%bl, %bl
+			leal	ArrCells, %edi
+	make_mask00:	addb	0(%edi, %esi, 8), %bl
+			shlb	%bl
+			addb	1(%edi, %esi, 8), %bl
+			shlb	%bl
+			addb	2(%edi, %esi, 8), %bl
+			shlb	%bl
+			addb	3(%edi, %esi, 8), %bl
+			shlb	%bl
+			addb	4(%edi, %esi, 8), %bl
+			shlb	%bl
+			addb	5(%edi, %esi, 8), %bl
+			shlb	%bl
+			addb	6(%edi, %esi, 8), %bl
+			shlb	%bl
+			addb	7(%edi, %esi, 8), %bl
 
-			jmp	_copy_line
-		_exit_copy_line:
-		incl	i
-		jmp	_copy_array
-	_exit_copy_array:
-	jmp	_run_simulation
+			leal	Text, %edi
+			movb	(%edi, %esi, 1), %ah
+			xorb	%bl, %ah
+			movb	%ah, %al
+			shrb	$4, %ah
+			shlb	$4, %al
+			shrb	$4, %al
 
-_exit_run_simulation:
-	movl	$3, %eax
-	xorl	%ebx, %ebx
-	movl	$buffer, %ecx
-	movl	$2, %edx
-	int	$0x80
+			movb	$48, %bh
+			movb	$48, %bl
+			addb	%ah, %bh
+			addb	%al, %bl
 
-ok:
-	movl	$0xA2F, %eax
-	movl	$0, i
-	cmp	%eax, buffer
-	je	_encryption
-#	jmp	_decryption
+			xorl	%ecx, %ecx
+			movl	$58, %eax
+			cmpb	%bh, %al
+			setle	%cl
+			movl	$7, %eax
+			mull	%ecx
+			addb	%al, %bh
 
-_encryption:
-	movl	$3, %eax
-	xorl	%ebx, %ebx
-	movl	$message, %ecx
-	movl	$13, %edx
-	int	$0x80
+			xorl	%ecx, %ecx
+			movl	$58, %eax
+			cmpb	%bl, %al
+			setle	%cl
+			movl	$7, %eax
+			mull	%ecx
+			addb	%al, %bl
 
-	xorl	%ebp, %ebp
-	call	_strlen
-	movl	$0, i
-	movl	$0, j
-
-	movl	$4, %eax
-	movl	$1, %ebx
-	movl	$char0x, %ecx
-	movl	$3, %edx
-	int	$0x80
-
-
-	movl	n, %eax
-	addl	$2, %eax
-	movl	m, %ebx
-	addl	$2, %ebx
-	mull	%ebx
-	movl	%eax, buffer
-
-_enc_loop:
-	movl	i, %eax
-	cmp	%eax, len
-	je	_exit_enc_loop
-
-	movl	$0, k
-
-	_enc_char:
-		xorl	%ebp, %ebp
-		_generate_mask:
-			movl	$8, %eax
-			cmp	%eax, k
-			je	_exit_generate_mask
-
-			lea	newArray, %edi
-			movl	j, %eax
-			shll	$1, %ebp
-			addl	(%edi, %eax, 4), %ebp
-
-			incl	j
-			movl	j, %eax
-			cmp	%eax, buffer
-			jle	_keep_j
-
-			_reset_j:
-				movl	$0, j
-			_keep_j:
-
-			incl	k
-			jmp	_generate_mask
-		_exit_generate_mask:
-
-		lea	message, %edi
-		movl	i, %eax
-		movl	(%edi, %eax, 1), %eax
-		xorl	%eax, %ebp
-		movl	%ebp, %ecx
-		shrl	$4, %ecx
-
-		movl	$0, buffer
-
-		_check_type:
-		movl	$1, %eax
-		cmp	%eax, buffer
-		je	_exit_check_type
-		incl	buffer
-
-		movl	$10, %eax
-		cmp	%eax, %ecx
-		jge	_print_letter
-
-		_print_digit:
+			movb	%bh, %al
 			pushl	%eax
-			pushl	$formatScanf
+			pushl	$FormatPrintfCh
 			call	printf
-			popl	%eax
-			popl	%eax
+			addl	$8, %esp
+
+			movb	%bl, %al
+			pushl	%eax
+			pushl	$FormatPrintfCh
+			call	printf
+			addl	$8, %esp
 
 			pushl	$0
 			call	fflush
-			popl	%eax
-
-			jmp	_done_printing
-
-		_print_letter:
-			movl	$11, %eax
-			cmp	%eax, %ecx
-			jge	_caseB
-		_caseA:
+			addl	$4, %esp
+			incl	%esi
+			jmp	print00.loop
+	print00.exit:
 			movl	$4, %eax
 			movl	$1, %ebx
-			movl	$charA, %ecx
+			movl	$NewLine, %ecx
 			movl	$2, %edx
 			int	$0x80
-			jmp	_done_printing
-		_caseB:
-			movl	$12, %eax
-			cmp	%eax, %ecx
-			jge	_caseC
+			jmp	exit
 
-			movl	$4, %eax
-			movl	$1, %ebx
-			movl	$charB, %ecx
-			movl	$2, %edx
-			int	$0x80
-			jmp	_done_printing
-		_caseC:
-			movl	$13, %eax
-			cmp	%eax, %ecx
-			jge	_caseD
+decrypt:		leal	Text, %edi
+			xorl	%ebx, %ebx
+	strlen01.loop:	movb	(%edi, %ebx, 1), %al
+			testb	%al, %al
+			jz	strlen01.exit
+			incb	%bl
+			jmp	strlen01.loop
+	strlen01.exit:	movl	%ebx, Temp
+			shlb	$2, %bl
+			movl	Lines, %eax
+			addl	$2, %eax
+			movl	Columns, %esi
+			addl	$2, %esi
+			mull	%esi
+			movl	%eax, %esi
+			movl	%eax, %ebp
 
-			movl	$4, %eax
-			movl	$1, %ebx
-			movl	$charC, %ecx
-			movl	$2, %edx
-			int	$0x80
-			jmp	_done_printing
-		_caseD:
-			movl	$14, %eax
-			cmp	%eax, %ebp
-			jge	_caseE
+			leal	ArrCells, %edi
+	extend01.loop:	cmpl	%ebx, %ebp
+			jg	extend01.exit
+			xorl	%ecx, %ecx
+			movl	%ebp, %edx
+	cpy01.loop:	cmpl	%ecx, %esi
+			je	cpy01.exit
+			movb	(%edi, %ecx, 1), %al
+			movb	%al, (%edi, %edx, 1)
+			incl	%ecx
+			incl	%edx
+			jmp	cpy01.loop
+	cpy01.exit:
+			addl	%esi, %ebp
+			jmp	extend01.loop
+	extend01.exit:
+			xorl	%esi, %esi
+			addl	$2, %esi
+	print01.loop:	movl	Temp, %eax
+			cmpl	%esi, %eax
+			jle	print01.exit
 
-			movl	$4, %eax
-			movl	$1, %ebx
-			movl	$charD, %ecx
-			movl	$2, %edx
-			int	$0x80
-			jmp	_done_printing
-		_caseE:
-			movl	$15, %eax
-			cmp	%eax, %ebp
-			je	_caseF
+			xorl	%ebx, %ebx
+			leal	ArrCells, %edi
+	make_mask01:	addb	-8(%edi, %esi, 4), %bl
+			shlb	%bl
+			addb	-7(%edi, %esi, 4), %bl
+			shlb	%bl
+			addb	-6(%edi, %esi, 4), %bl
+			shlb	%bl
+			addb	-5(%edi, %esi, 4), %bl
+			shlb	%bl
+			addb	-4(%edi, %esi, 4), %bl
+			shlb	%bl
+			addb	-3(%edi, %esi, 4), %bl
+			shlb	%bl
+			addb	-2(%edi, %esi, 4), %bl
+			shlb	%bl
+			addb	-1(%edi, %esi, 4), %bl
 
-			movl	$4, %eax
-			movl	$1, %ebx
-			movl	$charE, %ecx
-			movl	$2, %edx
-			int	$0x80
-			jmp	_done_printing
-		_caseF:
-			movl	$4, %eax
-			movl	$1, %ebx
-			movl	$charF, %ecx
-			movl	$2, %edx
-			int	$0x80
-			jmp	_done_printing
-		_done_printing:
-			movl	%ebp, %eax
+			leal	Text, %edi
+			movb	0(%edi, %esi, 1), %al
+			subb	$48, %al
+			movb	%al, %bh
+			movb	$10, %al
+			cmpb	%bh, %al
+			setle	%cl
+			movl	$7, %eax
+			mull	%ecx
+			subb	%al, %bh
+			shlb	$4, %bh
+
+			movb	1(%edi, %esi, 1), %al
+			subb	$48, %al
+			addb	%al, %bh
 			movb	%al, %cl
-			jmp	_check_type
-		_exit_check_type:
-	incl	i
-	jmp	_enc_loop
-_exit_enc_loop:
+			movb	$10, %al
+			cmpb	%cl, %al
+			setle	%cl
+			movl	$7, %eax
+			mull	%ecx
+			subb	%al, %bh
+			addl	%esi, %ebp
+			xorb	%bl, %bh
+			shrl	$8, %ebx
 
-exit:
-	movl	$1, %eax
-	xorl	%ebx, %ebx
-	int	$0x80
+			pushl	%ebx
+			pushl	$FormatPrintfCh
+			call	printf
+			addl	$8, %esp
 
+			pushl	$0
+			call	fflush
+			addl	$4, %esp
+
+			addl	$2, %esi
+			jmp	print01.loop
+	print01.exit:
+			movl	$4, %eax
+			movl	$1, %ebx
+			movl	$NewLine, %ecx
+			movl	$2, %edx
+			int	$0x80
+			jmp	exit
+
+exit:			movl	$1, %eax
+			xorl	%ebx, %ebx
+			int	$0x80
